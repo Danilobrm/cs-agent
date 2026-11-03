@@ -6,8 +6,8 @@ Technical case for an AI Engineer role: evaluators value clarity, documented dec
 the simplest solution that works. Do not over-engineer.
 
 ## Core design
-- Function calling with a small set of tools over in-memory pandas data (64 products, 20 orders).
-- No RAG: the full store policy (`data/policies.md`, ~2.5k words) goes in the system prompt.
+- Function calling with a small set of tools over in-memory pandas data (65 products, 20 orders).
+- No RAG: the full store policy (`data/policies.md`, ~1.8k words, ~3k tokens) goes in the system prompt.
 - Anything numeric, date-based or eligibility-related is computed in Python (`rules`), never by
   the LLM. Tools return ready-to-display values; the model only chooses tools and phrases replies.
 - Order data is shown only after `verify_customer` (order id + email or phone), per LGPD.
