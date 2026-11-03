@@ -1,4 +1,4 @@
-# Empório da Música — Customer Service Agent
+# Empório da Música: Customer Service Agent
 
 A customer service agent for Empório da Música, a musical instrument store in Campo Grande.
 It answers questions about products, prices, promotions, orders, shipping, payment and returns
@@ -70,12 +70,10 @@ call and how to phrase the answer; it never does arithmetic, date math or eligib
 
 ## Technical decisions
 
-<!-- One short subsection per decision: what you chose, why, what you rejected and when you'd switch. -->
-
 ### Framework / approach
 Function calling over structured data, with the full policy in the system prompt. I wrote the
 loop directly on the `openai` SDK instead of using LangChain or an agent framework: it is about
-a hundred lines, every step is visible, and there is nothing to configure. The loop has a cap on
+two hundred lines, every step is visible, and there is nothing to configure. The loop has a cap on
 tool rounds, a time limit and a fallback reply, so the customer always gets an answer even when
 the model or the API fails.
 
@@ -297,8 +295,8 @@ conversation, which is fine. The real risk is a stale or different value, so the
 different product, quantity, city or payment option". Prompt rules alone were not enough for
 ticket numbers: in one run the model invented ticket "12345".
 The agent loop now rejects a reply that mentions a ticket that was never opened and asks the
-model once to fix it. During the evaluation this guard fired once on 2.5-flash, and every
-handoff check passed.
+model once to fix it. The guard is covered by unit tests; in the recorded evaluation runs
+every handoff check called the tool, so it was not needed.
 
 ## Limitations and next steps
 
@@ -323,4 +321,28 @@ handoff check passed.
 
 ## Use of AI assistants
 
-<!-- Which tools, for what, and what you decided yourself. Be specific and honest. -->
+I used two Claude tools with different roles.
+
+**Claude (chat) as a design partner and reviewer.** I analyzed the case, the data and the
+policy with it, and made the technical decisions there: tools instead of RAG, code computing
+every number, the identity check, the reference date. It also found the data traps (order
+totals that don't match, product descriptions naming the wrong brand, contradictions in the
+policy). Each feature became a written plan with scope, tests and commit messages, and I
+reviewed every plan before running it and every result before merging. The plans are in
+`docs/plans/`.
+
+**Claude Code as the implementer.** It executed one plan per feature branch and stopped at
+defined checkpoints. Several times it pushed back on a plan with a better solution (category
+matching, a stock check, the Gemini 3 tool-call fields), and those changes were reviewed
+before being accepted. Implementation ran on Sonnet; the evaluation step ran on Opus, because
+judging the agent's behavior needs more reasoning than writing the code.
+
+**What stayed with me:** the design choices, the review of every plan and every diff, and
+the final call at each checkpoint. The clearest example is the evaluation: the first scripted
+run broke nine rules (`docs/evaluation-first-run.md`). Three rounds of prompt fixes moved the
+problems around instead of solving them, so we changed the tools to take the decision away
+from the model, added a code guard against invented ticket numbers, and stopped tuning when
+the remaining failure turned out to be a model limit.
+
+The git history follows git flow with Conventional Commits: one feature branch per plan,
+merged with `--no-ff`.

@@ -44,5 +44,6 @@ Run all three before every commit.
   dashes, few bullets. Never rewrite sections a plan does not mention.
 
 ## Plans
-Work is defined in `.plans/NN-name.md` (gitignored), executed in order. Follow the plan; if
+Work is defined in `.plans/NN-name.md` (gitignored), executed in order, and published to
+`docs/plans/` at release. Follow the plan; if
 something in it is wrong or ambiguous, stop and ask instead of improvising.
