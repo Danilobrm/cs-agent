@@ -12,7 +12,7 @@ dependencies = [
 ]
 
 [project.scripts]
-cs-agent = "cs_agent:main"
+cs-agent = "cs_agent.cli:main"
 
 [build-system]
 requires = ["uv_build>=0.13.7,<0.14.0"]
