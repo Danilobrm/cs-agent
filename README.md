@@ -29,7 +29,26 @@
 
 ## Assumptions
 
-<!-- Every ambiguity in the data or policy and how you resolved it. Bullet per item: the issue -> your decision. -->
+The data and the policy contain gaps and contradictions. I kept the source files untouched
+and resolved each case in code, in the customer's favor when the policy is silent.
+
+- **"Today".** Orders end in March 2026, so the agent uses a configurable `REFERENCE_DATE`
+  (default 2026-03-25). Set it to `today` to use the real date.
+- **Delivery date.** The data only has `estimated_delivery`; it is treated as the date the
+  customer received the order for return and warranty windows.
+- **Installments.** The payment table says "minimum R$ 100" while section 3.1 defines tiers.
+  Section 3.1 wins as the more specific rule; its "no minimum (except below R$ 50)" for up to
+  3x is read as a R$ 50 minimum.
+- **Free shipping at exactly R$ 500.** The policy says "above" and "below" R$ 500. Exactly
+  R$ 500 ships free.
+- **Preference exchanges.** The 7-day window counts from delivery, like the regret window.
+- **Metropolitan region.** Only Campo Grande counts; other cities get carrier options and a
+  CEP-based quote.
+- **Order totals.** Orders 3 and 20 do not match the sum of their items at current prices.
+  The data has no historical prices, so the agent reports the recorded total and offers a
+  human review instead of correcting it.
+- **Contact details.** The manual lists two WhatsApp numbers and a misspelled email. The agent
+  uses the WhatsApp channel number from section 7 and the cover email.
 
 ## Example conversations
 
