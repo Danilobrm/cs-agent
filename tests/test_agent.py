@@ -2,7 +2,8 @@
 
 import copy
 import json
-from datetime import date, datetime
+from dataclasses import replace
+from datetime import date, datetime, time
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -11,6 +12,7 @@ import pytest
 from cs_agent.agent import FALLBACK_TEXT, Agent
 from cs_agent.data import load_store
 from cs_agent.llm import LLM
+from cs_agent.tools import context
 from cs_agent.tools.context import Session, ToolContext
 
 DATA_DIR = Path(__file__).resolve().parents[1] / "data"
@@ -52,7 +54,9 @@ def store():
 
 def make_agent(store, script, **kwargs):
     client = FakeClient(script)
-    ctx = ToolContext(store, date(2026, 3, 25), datetime(2026, 3, 25, 10, 0), Session())
+    ctx = ToolContext(
+        store, date(2026, 3, 25), datetime(2026, 3, 25, 10, 0), Session(), time(10, 0)
+    )
     agent = Agent(LLM(client, "fake-model", "fake"), ctx, "POLICY-TEXT", **kwargs)
     return agent, client
 
@@ -275,3 +279,22 @@ def test_reset_clears_history_and_verification(store):
     agent.reply("oi")
     reply = agent.reply("e o pedido 8?")
     assert reply.trace[0].result == {"error": "verification_required"}
+
+
+def test_clock_is_refreshed_on_every_reply(store, monkeypatch):
+    agent, client = make_agent(store, [text("a"), text("b")])
+    agent.ctx = replace(agent.ctx, fixed_time=None)
+    for hour in (10, 19):
+        monkeypatch.setattr(context, "_clock_time", lambda hour=hour: time(hour, 0))
+        agent.reply("oi")
+    prompts = [r["messages"][0]["content"] for r in client.requests]
+    assert "25/03/2026 10:00" in prompts[0] and "25/03/2026 19:00" in prompts[1]
+
+
+def test_fixed_time_survives_replies_and_reset(store, monkeypatch):
+    agent, client = make_agent(store, [text("a"), text("b")])
+    monkeypatch.setattr(context, "_clock_time", lambda: time(19, 0))
+    agent.reply("oi")
+    agent.reset()
+    agent.reply("oi")
+    assert all("25/03/2026 10:00" in r["messages"][0]["content"] for r in client.requests)

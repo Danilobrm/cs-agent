@@ -63,6 +63,7 @@ class Agent:
 
     def reply(self, user_text: str) -> AgentReply:
         """Answer one customer message. Never raises: failures become a fallback reply."""
+        self.ctx = self.ctx.refreshed()  # a long session must not freeze the clock
         turn_start = len(self.history)
         self.history.append({"role": "user", "content": user_text})
         trace: list[ToolTrace] = []

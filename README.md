@@ -1,10 +1,34 @@
 # Empório da Música — Customer Service Agent
 
-<!-- One paragraph: what this is, who it serves, the single most important design idea. -->
+A customer service agent for Empório da Música, a musical instrument store in Campo Grande.
+It answers questions about products, prices, promotions, orders, shipping, payment and returns
+in Brazilian Portuguese, using the store's catalog, orders and policy manual. Everything that
+must be exact (prices, discounts, installments, deadlines, eligibility, identity checks) is
+computed in code; the language model only understands the customer and writes the answer.
 
 ## Quick start
 
-<!-- Requirements (Python version, API key), install, run CLI, run tests. Copy-pasteable commands only. -->
+Requires Python 3.12+ and [uv](https://docs.astral.sh/uv/).
+
+    git clone https://github.com/Danilobrm/cs-agent.git
+    cd cs-agent
+    uv sync
+    cp .env.example .env    # add GEMINI_API_KEY (free at https://aistudio.google.com/apikey)
+    uv run cs-agent
+
+Useful options:
+
+    uv run cs-agent --debug                 # show every tool call and its result
+    uv run cs-agent --date 2026-02-05       # simulate another "today" (default 2026-03-25)
+    uv run cs-agent --time 10:00            # pin the clock (opening hours)
+    uv run cs-agent --provider ollama --model qwen2.5:7b    # local model, no key
+    uv run cs-agent --script docs/scripts/01-catalog.txt --debug --transcript out.md
+
+Check the provider with `uv run python scripts/check_llm.py`. The tests need no API key:
+`uv run pytest`.
+
+In the chat: `/ajuda` lists commands, `/reset` starts a new conversation, `/debug` toggles the
+tool trace, `/sair` exits. Errors are logged to `cs-agent.log`.
 
 ## How it works
 

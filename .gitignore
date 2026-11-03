@@ -23,5 +23,6 @@ htmlcov/
 .DS_Store
 
 # Project
+cs-agent.log
 .plans/
 .claude/settings.local.json
