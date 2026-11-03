@@ -4,14 +4,13 @@ All records are plain dicts with native Python types (int, str, bool, date, Deci
 """
 
 import copy
+import csv
 import json
 import re
 from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
 from typing import Any
-
-import pandas as pd
 
 from cs_agent.money import to_money
 
@@ -21,22 +20,9 @@ PRODUCT_STATUSES = frozenset({"active", "discontinued", "coming_soon"})
 Record = dict[str, Any]
 
 
-def _native(value: Any) -> Any:
-    """Convert a pandas/numpy scalar to a native Python value (NaN/NaT -> None)."""
-    if value is None or value is pd.NaT:
-        return None
-    if isinstance(value, float) and value != value:
-        return None
-    if hasattr(value, "item"):  # numpy scalar
-        return value.item()
-    return value
-
-
-def _text_or_none(value: Any) -> str | None:
-    value = _native(value)
-    if value is None:
-        return None
-    text = str(value).strip()
+def _text_or_none(value: str | None) -> str | None:
+    """Stripped text, or None when empty."""
+    text = (value or "").strip()
     return text or None
 
 
@@ -52,28 +38,36 @@ def _check_status(value: str, allowed: frozenset[str], kind: str, row_id: int) -
 
 
 def _records(path: Path) -> list[Record]:
-    df = pd.read_csv(path)
-    return [{k: _native(v) for k, v in row.items()} for row in df.to_dict("records")]
+    """Raw rows as dicts of strings; normalizers convert the types."""
+    with path.open(newline="", encoding="utf-8") as f:
+        return list(csv.DictReader(f))
 
 
 def _normalize_category(row: Record) -> Record:
-    return row
+    return {**row, "category_id": int(row["category_id"])}
 
 
 def _normalize_customer(row: Record) -> Record:
-    phone = row["phone"]
+    phone = _text_or_none(row["phone"])
+    email = _text_or_none(row["email"])
     return {
         **row,
+        "customer_id": int(row["customer_id"]),
+        "phone": phone,
         "phone_digits": re.sub(r"\D", "", phone) if phone else None,
-        "email": row["email"].strip().lower() if row["email"] else None,
+        "email": email.lower() if email else None,
     }
 
 
 def _normalize_product(row: Record) -> Record:
-    _check_status(row["status"], PRODUCT_STATUSES, "product", row["product_id"])
+    product_id = int(row["product_id"])
+    _check_status(row["status"], PRODUCT_STATUSES, "product", product_id)
     specs = _text_or_none(row["specs"])
     return {
         **row,
+        "product_id": product_id,
+        "category_id": int(row["category_id"]),
+        "stock_quantity": int(row["stock_quantity"]),
         "price_brl": to_money(row["price_brl"]),
         "specs": json.loads(specs) if specs else {},
         "created_at": _to_date(row["created_at"]),
@@ -81,9 +75,12 @@ def _normalize_product(row: Record) -> Record:
 
 
 def _normalize_order(row: Record) -> Record:
-    _check_status(row["status"], ORDER_STATUSES, "order", row["order_id"])
+    order_id = int(row["order_id"])
+    _check_status(row["status"], ORDER_STATUSES, "order", order_id)
     return {
         **row,
+        "order_id": order_id,
+        "customer_id": int(row["customer_id"]),
         "order_date": _to_date(row["order_date"]),
         "estimated_delivery": _to_date(row["estimated_delivery"]),
         "total_brl": to_money(row["total_brl"]),
@@ -92,8 +89,22 @@ def _normalize_order(row: Record) -> Record:
     }
 
 
+def _normalize_order_item(row: Record) -> Record:
+    return {
+        "order_id": int(row["order_id"]),
+        "product_id": int(row["product_id"]),
+        "quantity": int(row["quantity"]),
+    }
+
+
 def _normalize_promotion(row: Record) -> Record:
-    return {**row, "is_active": bool(row["is_active"])}
+    return {
+        **row,
+        "promotion_id": int(row["promotion_id"]),
+        "product_id": int(row["product_id"]),
+        "discount_percent": int(row["discount_percent"]),
+        "is_active": row["is_active"] == "1",
+    }
 
 
 @dataclass(frozen=True)
@@ -174,7 +185,7 @@ def load_store(data_dir: Path | str) -> Store:
             r["customer_id"]: r for r in map(_normalize_customer, _records(d / "customers.csv"))
         },
         _orders={r["order_id"]: r for r in map(_normalize_order, _records(d / "orders.csv"))},
-        _order_items=_records(d / "order_items.csv"),
+        _order_items=[_normalize_order_item(r) for r in _records(d / "order_items.csv")],
         _products={
             r["product_id"]: r for r in map(_normalize_product, _records(d / "products.csv"))
         },
