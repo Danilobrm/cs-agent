@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from cs_agent.data import load_store
+from cs_agent.data import load_policy, load_store
 
 DATA_DIR = Path(__file__).resolve().parents[1] / "data"
 NATIVE = (int, str, bool, date, Decimal, dict, type(None))
@@ -87,3 +87,7 @@ def test_native_types(store):
     _assert_native(store.product(81))
     for item in store.items_for_order(1):
         _assert_native(item)
+
+
+def test_load_policy():
+    assert "Política de Trocas" in load_policy(DATA_DIR)

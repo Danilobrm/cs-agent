@@ -179,3 +179,8 @@ def load_store(data_dir: Path | str) -> Store:
         },
         _promotions=[_normalize_promotion(r) for r in _records(d / "promotions.csv")],
     )
+
+
+def load_policy(data_dir: Path | str) -> str:
+    """Return the full store policy markdown (goes into the system prompt)."""
+    return (Path(data_dir) / "policies.md").read_text(encoding="utf-8")
