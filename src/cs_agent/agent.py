@@ -15,7 +15,7 @@ from cs_agent.tools.registry import execute, openai_tool_schemas
 
 logger = logging.getLogger(__name__)
 
-TEMPERATURE = 0.2
+TEMPERATURE = 0
 FALLBACK_TEXT = (
     "Desculpe, tive um problema técnico agora. Pode tentar de novo em instantes? "
     "Se preferir, fale com a equipe pelo WhatsApp (67) 3321-4500."

@@ -85,6 +85,7 @@ def test_plain_answer(store):
     ]
     request = client.requests[0]
     assert request["model"] == "fake-model" and request["tool_choice"] == "auto"
+    assert request["temperature"] == 0  # reproducible transcripts and evals
     assert request["messages"][0]["role"] == "system"
     assert "POLICY-TEXT" in request["messages"][0]["content"]
     assert request["tools"]
