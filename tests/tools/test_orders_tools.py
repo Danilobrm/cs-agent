@@ -1,4 +1,5 @@
 import json
+from dataclasses import replace
 from datetime import date
 
 import pytest
@@ -108,6 +109,16 @@ def test_defect_falls_to_legal_warranty(ctx):
     result = check_return_eligibility(ctx, 7, "defect")
     assert result["eligible"] is True
     assert result["path"] == "legal_warranty"
+
+
+def test_order_6_defect_shows_store_exchange_then_legal_warranty(ctx):
+    ctx = replace(ctx, ref_date=date(2026, 2, 5))
+    verify_customer(ctx, 6, "gabriel.araujo@jmail.com")
+    result = check_return_eligibility(ctx, 6, "defect")
+    assert result["path"] == "store_exchange"
+    assert result["deadline"] == date(2026, 2, 17)  # order 18/01 + 30 days
+    assert result["next_path"] == "legal_warranty"
+    assert result["next_deadline"] == date(2026, 5, 2)  # delivery 01/02 + 90 days
 
 
 def test_not_delivered_order_is_not_returnable_yet(ctx):

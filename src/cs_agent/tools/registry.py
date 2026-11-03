@@ -97,7 +97,9 @@ TOOLS: dict[str, ToolSpec] = {
             "Decide whether an order can be returned, exchanged or claimed under warranty, with "
             "deadline and conditions. Call only after verify_customer succeeded for this order. "
             "reason: regret (changed their mind), preference (wants another model, size or "
-            "color) or defect (manufacturing defect).",
+            "color) or defect (manufacturing defect). For defects, next_path and next_deadline "
+            "say what applies after the deadline; use reason=defect when the customer asks about "
+            "a defect found later.",
             _schema(
                 ["order_id", "reason"],
                 order_id=_ORDER_ID,
