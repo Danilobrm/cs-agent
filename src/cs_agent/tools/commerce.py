@@ -30,6 +30,16 @@ def _resolve(
         if state != "available":
             unavailable.append({"product_id": product_id, "name": product["name"], "reason": state})
             continue
+        if quantity > product["stock_quantity"]:  # the whole line is dropped, never partial
+            unavailable.append(
+                {
+                    "product_id": product_id,
+                    "name": product["name"],
+                    "reason": "insufficient_stock",
+                    "available_quantity": product["stock_quantity"],
+                }
+            )
+            continue
         quote, promo = current_price(ctx.store, product)
         category_ids.add(product["category_id"])
         lines.append(
