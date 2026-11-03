@@ -92,3 +92,32 @@ def test_results_serialize_to_json(ctx):
         quote_shipping(ctx, "Campo Grande", [127]),
     ):
         json.dumps(to_json_safe(result))
+
+
+def test_quantity_above_stock_is_rejected_whole(ctx):
+    result = quote_payment(ctx, [81] * 13)  # stock is 12
+    assert result["error"] == "no_purchasable_items"
+    assert result["unavailable"] == [
+        {
+            "product_id": 81,
+            "name": "Yamaha C40 Nylon Natural",
+            "reason": "insufficient_stock",
+            "available_quantity": 12,
+        }
+    ]
+
+
+def test_quantity_equal_to_stock_is_priced(ctx):
+    result = quote_payment(ctx, [81] * 12)
+    assert result["unavailable"] == []
+    assert result["items"][0]["quantity"] == 12
+    assert result["card_total"] == Decimal("7198.80")
+
+
+def test_insufficient_stock_line_is_left_out_of_totals_and_shipping(ctx):
+    result = quote_payment(ctx, [127, 81, 81, 81, 81, 81, 81, 81, 81, 81, 81, 81, 81, 81])
+    assert result["card_total"] == Decimal("323.10")
+    assert result["unavailable"][0]["reason"] == "insufficient_stock"
+    shipping = quote_shipping(ctx, "Campo Grande", [127] + [81] * 13)
+    assert shipping["order_value"] == Decimal("323.10")
+    assert shipping["unavailable"][0]["available_quantity"] == 12
