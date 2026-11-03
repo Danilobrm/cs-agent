@@ -76,14 +76,23 @@ def _search_words(product: Record) -> list[str]:
     return _words(" ".join(parts))
 
 
+def _all_match(tokens: list[str], words: list[str]) -> bool:
+    return bool(tokens) and all(_matches(t, words) for t in tokens)
+
+
 def _matching_categories(store: Store, category: str) -> list[Record]:
-    """Categories whose name has a word starting with each word of `category`."""
+    """Categories whose name has a word starting with each word of `category`.
+
+    Falls back to the category descriptions, so "saxofone" finds the (empty) woodwind
+    category. A word that products also use, like "contrabaixo" (an electric bass here and an
+    orchestral double bass in a description), does not fall back: it is not a category.
+    """
     tokens = _words(category)
-    return [
-        c
-        for c in store.categories()
-        if tokens and all(_matches(t, _words(c["name"])) for t in tokens)
-    ]
+    categories = store.categories()
+    by_name = [c for c in categories if _all_match(tokens, _words(c["name"]))]
+    if by_name or any(_all_match(tokens, _search_words(p)) for p in store.products()):
+        return by_name
+    return [c for c in categories if _all_match(tokens, _words(c["description"]))]
 
 
 def search_products(

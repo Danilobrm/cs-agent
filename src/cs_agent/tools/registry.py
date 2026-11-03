@@ -45,7 +45,9 @@ TOOLS: dict[str, ToolSpec] = {
             "about what the store sells or for recommendations; never state a price or stock "
             "from memory. Returns up to `limit` products (max 10) with availability, stock and "
             "final prices. note=category_not_carried means the store does not carry that "
-            "category right now; note=category_not_found comes with the list of real categories.",
+            "category right now; note=category_not_found comes with the list of category names, "
+            "which says nothing about stock. only_available hides out-of-stock products, so leave "
+            "it off when the customer names a specific product.",
             _schema(
                 query={"type": "string", "description": "Free text: brand, model, type, color."},
                 category={"type": "string", "description": 'Category name, e.g. "violao".'},
