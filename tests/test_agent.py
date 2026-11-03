@@ -165,6 +165,17 @@ def test_missing_tool_call_id_is_generated(store):
     assert_valid_history(agent.history)
 
 
+def test_provider_extra_fields_on_tool_calls_are_sent_back(store):
+    signed = call("get_product", {"product_id": 81})
+    signed.model_extra = {"extra_content": {"google": {"thought_signature": "sig"}}}
+    agent, client = make_agent(store, [tools_msg(signed), text("ok")])
+    agent.reply("x")
+    sent = client.requests[1]["messages"][-2]["tool_calls"][0]
+    assert sent["extra_content"] == {"google": {"thought_signature": "sig"}}
+    assert sent["id"] == "c1" and sent["function"]["name"] == "get_product"
+    assert_valid_history(agent.history)
+
+
 def test_bad_tool_arguments_go_back_to_the_model(store):
     bad = SimpleNamespace(id="c1", function=SimpleNamespace(name="get_product", arguments="{oops"))
     agent, _ = make_agent(store, [tools_msg(bad), text("Desculpa, qual produto?")])

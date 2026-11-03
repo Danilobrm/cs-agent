@@ -189,12 +189,17 @@ class Agent:
 
 
 def _assistant_message(content: str | None, calls: list[Any]) -> Message:
-    """Assistant message with its tool calls; some providers omit call ids, so make them."""
+    """Assistant message with its tool calls; some providers omit call ids, so make them.
+
+    Provider-specific fields on a call are sent back as received: Gemini 3 rejects the next
+    request (HTTP 400) unless each call keeps its `extra_content` thought signature.
+    """
     return {
         "role": "assistant",
         "content": content or "",
         "tool_calls": [
             {
+                **(getattr(call, "model_extra", None) or {}),
                 "id": call.id or f"call_{uuid.uuid4().hex[:12]}",
                 "type": "function",
                 "function": {
