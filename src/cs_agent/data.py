@@ -3,6 +3,7 @@
 All records are plain dicts with native Python types (int, str, bool, date, Decimal, None).
 """
 
+import copy
 import json
 import re
 from dataclasses import dataclass
@@ -107,10 +108,10 @@ class Store:
     _promotions: list[Record]
 
     def category(self, category_id: int) -> Record | None:
-        return self._categories.get(category_id)
+        return copy.deepcopy(self._categories.get(category_id))
 
     def categories(self) -> list[Record]:
-        return list(self._categories.values())
+        return copy.deepcopy(list(self._categories.values()))
 
     def product(self, product_id: int) -> Record | None:
         """Product record including `category_name`, or None."""
@@ -121,13 +122,13 @@ class Store:
         return [self._with_category(r) for r in self._products.values()]
 
     def customer(self, customer_id: int) -> Record | None:
-        return self._customers.get(customer_id)
+        return copy.deepcopy(self._customers.get(customer_id))
 
     def order(self, order_id: int) -> Record | None:
-        return self._orders.get(order_id)
+        return copy.deepcopy(self._orders.get(order_id))
 
     def items_for_order(self, order_id: int) -> list[Record]:
-        """Order lines joined with product name.
+        """Order lines joined with product name (copies, safe to mutate).
 
         The data has no historical item price, so `current_unit_price` is the product's
         price today, not necessarily what the customer paid.
@@ -147,7 +148,7 @@ class Store:
         return items
 
     def promotions_for_product(self, product_id: int) -> list[Record]:
-        return [r for r in self._promotions if r["product_id"] == product_id]
+        return copy.deepcopy([r for r in self._promotions if r["product_id"] == product_id])
 
     def active_promotion(self, product_id: int) -> Record | None:
         """Active promotion (is_active only) for a product.
@@ -159,7 +160,7 @@ class Store:
 
     def _with_category(self, product: Record) -> Record:
         category = self._categories.get(product["category_id"])
-        return {**product, "category_name": category["name"] if category else None}
+        return copy.deepcopy({**product, "category_name": category["name"] if category else None})
 
 
 def load_store(data_dir: Path | str) -> Store:

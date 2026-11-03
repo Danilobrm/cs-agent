@@ -89,5 +89,35 @@ def test_native_types(store):
         _assert_native(item)
 
 
+def test_order_is_isolated_copy(store):
+    original = store.order(1)["status"]
+    store.order(1)["status"] = "cancelled"
+    assert store.order(1)["status"] == original
+
+
+def test_customer_is_isolated_copy(store):
+    original = store.customer(1)["email"]
+    store.customer(1)["email"] = "hacked@example.com"
+    assert store.customer(1)["email"] == original
+
+
+def test_product_specs_is_isolated_copy(store):
+    original = store.product(81)["specs"]["color"]
+    store.product(81)["specs"]["color"] = "Red"
+    store.products()[0]["specs"].clear()
+    assert store.product(81)["specs"]["color"] == original
+    assert store.products()[0]["specs"]
+
+
+def test_category_and_promotion_are_isolated_copies(store):
+    name = store.category(5)["name"]
+    store.category(5)["name"] = "x"
+    store.categories()[0]["name"] = "x"
+    assert store.category(5)["name"] == name
+    store.promotions_for_product(127)[0]["discount_percent"] = 99
+    store.active_promotion(127)["discount_percent"] = 99
+    assert store.active_promotion(127)["discount_percent"] == 10
+
+
 def test_load_policy():
     assert "Política de Trocas" in load_policy(DATA_DIR)
