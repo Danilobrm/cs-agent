@@ -39,7 +39,9 @@ Run all three before every commit.
   small focused commits, imperative mood, English.
 - NEVER add Co-Authored-By, "Generated with", or any AI attribution to commits or PRs.
 - Stage files explicitly; never `git add .` or `git add -A`.
-- Never edit README.md unless a plan says so; the author writes it.
+- README.md is maintained by Claude Code, but only through the "README" section of each plan,
+  which gives the content to add. Keep its voice: concise, plain English, impact first, no em
+  dashes, few bullets. Never rewrite sections a plan does not mention.
 
 ## Plans
 Work is defined in `.plans/NN-name.md` (gitignored), executed in order. Follow the plan; if
