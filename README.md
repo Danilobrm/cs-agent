@@ -49,6 +49,18 @@ and resolved each case in code, in the customer's favor when the policy is silen
   human review instead of correcting it.
 - **Contact details.** The manual lists two WhatsApp numbers and a misspelled email. The agent
   uses the WhatsApp channel number from section 7 and the cover email.
+- **Special freight.** The policy lists "contrabaixos" among large items that may need an
+  individual freight quote, but the catalog uses that word for electric basses too. I only flag
+  drums (category 3) and keyboards and pianos (category 4), so a double bass would not be flagged.
+- **Warranty after 30 days.** Within 30 days of purchase a defect is exchanged by the store.
+  After that the 90-day legal warranty applies and the store can help on request. Once it
+  expires, the manufacturer warranty is the only path, and the store has no obligation there.
+- **Return conditions.** The data cannot say if a product is unused, in its original packaging
+  or a "final sale" item, so the agent always lists these conditions instead of deciding them.
+- **Online purchases.** The 7-day regret right is for online purchases, but orders have no
+  channel. All delivered orders are treated as eligible.
+- **Holidays.** The store is closed on holidays, but there is no holiday calendar, so a holiday
+  is reported as open.
 
 ## Example conversations
 
