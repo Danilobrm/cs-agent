@@ -1,7 +1,6 @@
-"""Run the behavior checks against a real model and write docs/evaluation-<provider>.md.
+"""Run the behavior checks against a real model and write docs/evaluation-<model>.md.
 
 Usage: uv run python scripts/evaluate.py --provider gemini [--model NAME] --runs 2 [--delay 4]
-With --model other than the provider default, the file is docs/evaluation-<provider>-<model>.md.
 """
 
 import argparse
@@ -52,9 +51,8 @@ def main() -> int:
     )
     print("\n" + render_table(results))
 
-    default = model == PROVIDERS[args.provider].default_model
-    name = args.provider if default else f"{args.provider}-{model.replace(':', '-')}"
-    path = PROJECT_ROOT / "docs" / f"evaluation-{name}.md"
+    # One file per model: two models of the same provider must not overwrite each other.
+    path = PROJECT_ROOT / "docs" / f"evaluation-{model.replace(':', '-').replace('/', '-')}.md"
     path.write_text(
         render_report(results, args.provider, model, args.runs, date.today().isoformat()),
         encoding="utf-8",

@@ -153,7 +153,7 @@ def verify(name, *replies):
 
 
 def test_check_names_are_unique():
-    assert len(BY_NAME) == len(CHECKS) == 12
+    assert len(BY_NAME) == len(CHECKS) == 13
 
 
 def test_price_needs_tool():
@@ -231,4 +231,25 @@ def test_handoff_ticket_real():
     ]
     assert verify("handoff_ticket_real", first, AgentReply("Vou passar para a equipe.")) == [
         "request_human_handoff was not called"
+    ]
+
+
+def test_defect_calls_return_tool():
+    verified = trace("verify_customer", {"verified": True})
+    warranty = trace(
+        "check_return_eligibility",
+        {"order_id": 1, "path": "manufacturer_warranty"},
+        {"order_id": 1, "reason": "defect"},
+    )
+    reply = AgentReply("A garantia legal acabou; acione o fabricante.", [verified, warranty])
+    assert verify("defect_calls_return_tool", reply) == []
+    every = trace(
+        "check_return_eligibility",
+        {"order_id": 1, "by_reason": {"defect": {"path": "manufacturer_warranty"}}},
+        {"order_id": 1},
+    )
+    assert verify("defect_calls_return_tool", AgentReply("...", [verified, every])) == []
+    asked = AgentReply("Foi defeito de fabricação ou mau uso?", [verified])
+    assert verify("defect_calls_return_tool", asked) == [
+        "check_return_eligibility(1) was not called"
     ]

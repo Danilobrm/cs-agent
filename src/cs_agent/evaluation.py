@@ -192,6 +192,17 @@ def _handoff_ticket_real(c: Conversation) -> list[str]:
     return p
 
 
+def _defect_calls_return_tool(c: Conversation) -> list[str]:
+    # Order 1 was delivered on 25/10/2025: past the 30-day store exchange and the 90-day legal
+    # warranty, so only the manufacturer warranty is left.
+    p: list[str] = []
+    calls = _successful(c.trace, "check_return_eligibility", order_id=1)
+    _expect(p, bool(calls), "check_return_eligibility(1) was not called")
+    paths = {v for t in calls for v in _values(t.result, "path")}
+    _expect(p, not calls or "manufacturer_warranty" in paths, "no manufacturer_warranty path")
+    return p
+
+
 VERIFIED_ANA = "Pedido 8, telefone (67) 99654-7821"
 
 CHECKS: tuple[Check, ...] = (
@@ -240,6 +251,11 @@ CHECKS: tuple[Check, ...] = (
         "handoff_ticket_real",
         (VERIFIED_ANA, "Já passou muito da data, quero falar com alguém"),
         _handoff_ticket_real,
+    ),
+    Check(
+        "defect_calls_return_tool",
+        ("Pedido 1, pedro.oliveira@jmail.com, meu violão deu defeito",),
+        _defect_calls_return_tool,
     ),
 )
 
