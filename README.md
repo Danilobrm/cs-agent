@@ -8,8 +8,24 @@
 
 ## How it works
 
-<!-- 5-8 lines + a small diagram: user -> agent loop -> tools -> pandas tables / policy.
-     Say what the LLM decides and what code decides. -->
+The agent is a function-calling loop. Each customer message goes to the model together with
+the conversation history, the system prompt and the tool definitions. The model either answers
+or asks for tools; tools run in Python and their results go back to the model until it writes
+the reply.
+
+    customer --> CLI --> agent loop --> LLM (Gemini, Ollama or OpenAI)
+                            |   ^
+                   tool calls   results
+                            v   |
+                          tools --> rules  (prices, installments, shipping, returns, hours)
+                            |
+                            +-----> store  (CSV data loaded in memory)
+
+The split of responsibilities is the core design decision. The model understands the request,
+picks tools and writes the answer in the store's tone. Code does everything that must be
+exact: prices, PIX discounts, installment limits, shipping, return and warranty deadlines,
+stock and identity checks. Policy 7.1 says the assistant must never state prices, stock or
+deadlines without checking the system, so the agent is built so that it cannot.
 
 ### Tools
 
@@ -33,10 +49,37 @@ call and how to phrase the answer; it never does arithmetic, date math or eligib
 <!-- One short subsection per decision: what you chose, why, what you rejected and when you'd switch. -->
 
 ### Framework / approach
+Function calling over structured data, with the full policy in the system prompt. I wrote the
+loop directly on the `openai` SDK instead of using LangChain or an agent framework: it is about
+a hundred lines, every step is visible, and there is nothing to configure. The loop has a cap on
+tool rounds, a time limit and a fallback reply, so the customer always gets an answer even when
+the model or the API fails.
+
 ### LLM
+
 ### Retrieval (why no RAG)
+The policy is about 1,800 words (around 3k tokens), so it goes whole into the system prompt.
+With the full text always present there is no retrieval step that can miss the right section,
+and answers that combine sections (a return that touches the regret window, defects and
+warranty) stay correct. Structured data is served by tools, because exact lookups beat semantic
+search for "order 8" or "price of product 127". The prompt puts static content first and the
+current date last, so providers that cache prompt prefixes reuse the policy on every call.
+I would add retrieval if the knowledge base grew to many documents or long manuals, starting
+with section-level search, and semantic search inside `search_products` for vague requests
+over a large catalog.
+
 ### Data access
+The CSVs are loaded once into memory with the standard `csv` module and exposed through a small
+`Store` with typed accessors. At this size a database or a SQL agent would add moving parts
+without benefit; in production the same accessors would query a database and the tools would not
+change. Letting the model write SQL was ruled out: it would put arithmetic and filtering back
+in the model's hands.
+
 ### Memory and state
+Conversation history lives in memory for the CLI session; `/reset` clears it. A support chat is
+a session, and persisting it would mean storing personal data (LGPD) with no gain for this case.
+The session also holds which customers were verified, so a customer is asked for their details
+once per conversation.
 
 ## Assumptions
 
