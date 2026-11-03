@@ -1,0 +1,9 @@
+# Catalog: search, promotions and stock
+# Search with a price filter and the PIX price, a promotion that already ended, an
+# out-of-stock product with alternatives, and accessories the store does not sell.
+# run: uv run cs-agent --script docs/scripts/01-catalog.txt --debug --time 10:00 --transcript docs/conversations/01-catalog.md
+
+Oi! Tô procurando um violão até 800 reais pra começar a estudar
+O Tagima Woodstock ainda tá com aquele desconto de 30% da Black Friday?
+E o Giannini GF-3D Dreadnought, tem?
+Beleza. Vocês vendem cordas e afinador também?

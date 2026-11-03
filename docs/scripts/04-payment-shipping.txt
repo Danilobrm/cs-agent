@@ -1,0 +1,9 @@
+# Payment and shipping
+# Installments above the allowed maximum, the Campo Grande shipping fee, special freight
+# and carrier options for another city, and the rule for split payments.
+# run: uv run cs-agent --script docs/scripts/04-payment-shipping.txt --debug --time 10:00 --transcript docs/conversations/04-payment-shipping.md
+
+Quero o Kala KA-C, dá pra parcelar em 6x?
+E o frete pra Campo Grande?
+E se eu levar também uma bateria Yamaha Kit 1 e mandar pra Dourados?
+Posso pagar metade no PIX e metade no cartão?

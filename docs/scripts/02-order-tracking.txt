@@ -1,0 +1,10 @@
+# Order tracking with identity check
+# The identity gate (LGPD), no data leak after a failed check, verification by phone,
+# delay detection, a handoff ticket, and refusal to show another customer's order.
+# run: uv run cs-agent --script docs/scripts/02-order-tracking.txt --debug --time 10:00 --transcript docs/conversations/02-order-tracking.md
+
+Oi, meu pedido 8 ainda não chegou
+ana.ferreira@gmail.com
+Desculpa, é (67) 99654-7821
+Já passou muito da data, quero falar com alguém
+E o pedido 1, de quem é?
