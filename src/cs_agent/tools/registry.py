@@ -89,8 +89,9 @@ TOOLS: dict[str, ToolSpec] = {
         ToolSpec(
             "get_order",
             "Status, items, payment, tracking code and delivery status (on_time or delayed) of an "
-            "order. Call only after verify_customer succeeded for this order. If total_check "
-            "does not match, report the recorded total and offer a human review.",
+            "order; days_late is present when it is delayed. Call only after verify_customer "
+            "succeeded for this order. If total_check does not match, report the recorded total "
+            "and offer a human review.",
             _schema(["order_id"], order_id=_ORDER_ID),
             orders.get_order,
         ),

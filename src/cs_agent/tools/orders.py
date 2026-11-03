@@ -5,7 +5,7 @@ from dataclasses import asdict
 from typing import Any, get_args
 
 from cs_agent.data import Record
-from cs_agent.rules.orders import delivery_status, total_matches
+from cs_agent.rules.orders import days_late, delivery_status, total_matches
 from cs_agent.rules.returns import Reason, return_eligibility
 from cs_agent.tools.context import MAX_FAILED_VERIFICATIONS, ToolContext
 
@@ -80,6 +80,9 @@ def get_order(ctx: ToolContext, order_id: int) -> dict[str, Any]:
         ),
         "total_check": {"matches": check.matches, "computed_at_current_prices": check.computed},
     }
+    late = days_late(order["status"], order["estimated_delivery"], ctx.ref_date)
+    if late is not None:
+        result["days_late"] = late
     if order["status"] == "cancelled":
         result["cancellation_reason"] = order["notes"]
     return result

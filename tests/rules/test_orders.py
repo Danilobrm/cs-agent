@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 
 from cs_agent.data import load_store
-from cs_agent.rules.orders import delivery_status, total_matches
+from cs_agent.rules.orders import days_late, delivery_status, total_matches
 
 REF = date(2026, 3, 25)
 DATA_DIR = Path(__file__).resolve().parents[2] / "data"
@@ -32,6 +32,22 @@ def test_estimated_day_itself_is_on_time():
 @pytest.mark.parametrize("status", ["pending", "confirmed", "delivered", "cancelled"])
 def test_delivery_status_only_for_shipped(status):
     assert delivery_status(status, date(2026, 1, 1), REF) is None
+
+
+def test_days_late_counts_from_the_estimate():
+    estimate = date(2026, 2, 28)
+    assert days_late("shipped", estimate, REF) == 25
+    assert days_late("shipped", estimate, date(2026, 3, 1)) == 1
+    assert days_late("shipped", estimate, estimate) is None  # still on time
+
+
+@pytest.mark.parametrize("status", ["pending", "confirmed", "delivered", "cancelled"])
+def test_days_late_only_for_shipped(status):
+    assert days_late(status, date(2026, 1, 1), REF) is None
+
+
+def test_days_late_without_estimate():
+    assert days_late("shipped", None, REF) is None
 
 
 def test_shipped_without_estimate_is_none():

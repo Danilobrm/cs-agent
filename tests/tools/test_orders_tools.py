@@ -64,6 +64,7 @@ def test_get_order_shipped_late(ctx):
     order = get_order(ctx, 8)
     assert order["status"] == "shipped"
     assert order["delivery_status"] == "delayed"
+    assert order["days_late"] == 25  # estimate 28/02, reference date 25/03
     assert order["payment"] == "Cartão de débito"
     assert order["tracking_code"] == "BRJL5544332BR"
     assert order["estimated_delivery"] == date(2026, 2, 28)
@@ -94,6 +95,11 @@ def test_total_check_reports_mismatch(ctx):
     check = get_order(ctx, 3)["total_check"]
     assert check["matches"] is False
     assert check["computed_at_current_prices"] is not None
+
+
+def test_days_late_only_when_delayed(ctx):
+    verify_customer(ctx, 7, "leticia.rocha@jmail.com")
+    assert "days_late" not in get_order(ctx, 7)  # delivered
 
 
 def test_regret_window_expired_for_delivered_order(ctx):
