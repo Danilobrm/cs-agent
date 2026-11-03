@@ -84,6 +84,14 @@ def test_regret_window_has_expired_for_a_delivered_order(ctx):
     assert result["deadline"] == "24/02/2026"  # delivered 17/02, 7 days; today is 25/03
 
 
+def test_return_question_without_a_reason(ctx):
+    execute(ctx, "verify_customer", {"order_id": 1, "email_or_phone": "pedro.oliveira@jmail.com"})
+    result = execute(ctx, "check_return_eligibility", {"order_id": 1})
+    defect = result["by_reason"]["defect"]
+    assert defect["path"] == "manufacturer_warranty" and defect["eligible"] is False
+    assert result["by_reason"]["regret"]["reason_code"] == "regret_window_expired"
+
+
 def test_handoff_after_blocked_verification(ctx):
     for _ in range(3):
         execute(ctx, "verify_customer", {"order_id": 8, "email_or_phone": "x@jmail.com"})

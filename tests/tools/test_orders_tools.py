@@ -127,6 +127,23 @@ def test_order_6_defect_shows_store_exchange_then_legal_warranty(ctx):
     assert result["next_deadline"] == date(2026, 5, 2)  # delivery 01/02 + 90 days
 
 
+def test_without_reason_returns_every_path(ctx):
+    ctx = replace(ctx, ref_date=date(2026, 2, 5))
+    verify_customer(ctx, 6, "gabriel.araujo@jmail.com")
+    result = check_return_eligibility(ctx, 6)
+    assert set(result) == {"order_id", "by_reason"}
+    by_reason = result["by_reason"]
+    assert set(by_reason) == {"regret", "preference", "defect"}
+    assert by_reason["regret"]["path"] == "store_return"
+    assert by_reason["regret"]["deadline"] == date(2026, 2, 8)  # delivery 01/02 + 7 days
+    assert by_reason["defect"]["next_path"] == "legal_warranty"
+    json.dumps(to_json_safe(result))
+
+
+def test_without_reason_still_requires_verification(ctx):
+    assert check_return_eligibility(ctx, 6) == {"error": "verification_required"}
+
+
 def test_not_delivered_order_is_not_returnable_yet(ctx):
     verify_customer(ctx, 8, EMAIL)
     result = check_return_eligibility(ctx, 8, "regret")
