@@ -106,6 +106,61 @@ class Store:
     _products: dict[int, Record]
     _promotions: list[Record]
 
+    def category(self, category_id: int) -> Record | None:
+        return self._categories.get(category_id)
+
+    def categories(self) -> list[Record]:
+        return list(self._categories.values())
+
+    def product(self, product_id: int) -> Record | None:
+        """Product record including `category_name`, or None."""
+        row = self._products.get(product_id)
+        return self._with_category(row) if row else None
+
+    def products(self) -> list[Record]:
+        return [self._with_category(r) for r in self._products.values()]
+
+    def customer(self, customer_id: int) -> Record | None:
+        return self._customers.get(customer_id)
+
+    def order(self, order_id: int) -> Record | None:
+        return self._orders.get(order_id)
+
+    def items_for_order(self, order_id: int) -> list[Record]:
+        """Order lines joined with product name.
+
+        The data has no historical item price, so `current_unit_price` is the product's
+        price today, not necessarily what the customer paid.
+        """
+        items = []
+        for row in self._order_items:
+            if row["order_id"] != order_id:
+                continue
+            product = self._products.get(row["product_id"])
+            items.append(
+                {
+                    **row,
+                    "product_name": product["name"] if product else None,
+                    "current_unit_price": product["price_brl"] if product else None,
+                }
+            )
+        return items
+
+    def promotions_for_product(self, product_id: int) -> list[Record]:
+        return [r for r in self._promotions if r["product_id"] == product_id]
+
+    def active_promotion(self, product_id: int) -> Record | None:
+        """Active promotion (is_active only) for a product.
+
+        If several are active, the one with the highest discount wins. None if none.
+        """
+        active = [r for r in self.promotions_for_product(product_id) if r["is_active"]]
+        return max(active, key=lambda r: r["discount_percent"], default=None)
+
+    def _with_category(self, product: Record) -> Record:
+        category = self._categories.get(product["category_id"])
+        return {**product, "category_name": category["name"] if category else None}
+
 
 def load_store(data_dir: Path | str) -> Store:
     """Read the six CSVs from data_dir and normalize them."""
