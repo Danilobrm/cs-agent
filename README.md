@@ -15,7 +15,18 @@
 
 | Tool | What it answers | Policy section |
 |------|-----------------|----------------|
-|      |                 |                |
+| `search_products` | Find instruments by text, category or price range | 7.2 |
+| `get_product` | Details, stock, current price, ended promotions, alternatives | 6.2, 7.3 |
+| `list_active_promotions` | Deals running now, with original and promotional price | 6.2 |
+| `verify_customer` | Confirms identity with order id plus email or phone | 9 |
+| `get_order` | Status, items, tracking, delays (verified customers only) | 5.3, 9 |
+| `check_return_eligibility` | Return, exchange or warranty path and deadline | 4, 8 |
+| `quote_payment` | PIX and card totals, installment options | 3, 6.2 |
+| `quote_shipping` | Fee and delivery time for a city | 5 |
+| `request_human_handoff` | Opens a ticket for complaints and cases the agent cannot solve | 7.3 |
+
+Tools return values that are already computed and formatted. The model chooses which tool to
+call and how to phrase the answer; it never does arithmetic, date math or eligibility checks.
 
 ## Technical decisions
 
@@ -61,6 +72,15 @@ and resolved each case in code, in the customer's favor when the policy is silen
   channel. All delivered orders are treated as eligible.
 - **Holidays.** The store is closed on holidays, but there is no holiday calendar, so a holiday
   is reported as open.
+- **Conflicting product descriptions.** Several products between 135 and 144 have descriptions that name a
+  different brand than the product name (e.g. "Music Man Bass" described as a Fender Jazz Bass)
+  and specs that disagree with the text. Name and structured specs are treated as the source of
+  truth; a description that mentions another brand is withheld from the agent.
+- **Identity check.** Order details are personal data (LGPD, section 9), so the agent asks for
+  the order number plus the email or phone on file before showing them. Failures return the same
+  message whether the order exists or not, and three failures lead to a human.
+- **Value for free shipping.** The R$ 500 threshold uses the price with promotions applied,
+  before the PIX discount.
 
 ## Example conversations
 
