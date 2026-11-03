@@ -35,6 +35,10 @@ class ReturnDecision:
     reason_code: str
     conditions: tuple[str, ...]
     policy_section: str
+    # Defects only: the remedy that follows once `deadline` passes, and its own deadline
+    # (None for the manufacturer warranty, which depends on the product's certificate).
+    next_path: RemedyPath | None = None
+    next_deadline: date | None = None
 
 
 def return_eligibility(
@@ -66,7 +70,8 @@ def return_eligibility(
       Preference: subject to stock; price difference charged or refunded.
     - defect: store exchange while ref_date <= order_date + 30 days (Policy 4.2); else legal
       warranty while ref_date <= delivery + 90 days (Policy 8.1); else manufacturer warranty
-      (6 months to 2 years, Policy 8.2).
+      (6 months to 2 years, Policy 8.2). `next_path` / `next_deadline` say what follows the
+      current path, so "what if the defect shows up later?" has a computed answer.
     """
     if reason not in _REASONS:
         raise ValueError(f"Unknown return reason {reason!r}; expected one of {_REASONS}")
@@ -121,6 +126,7 @@ def return_eligibility(
 
 def _defect(order_date: date, delivery_date: date, ref_date: date) -> ReturnDecision:
     store_deadline = order_date + timedelta(days=STORE_DEFECT_DAYS)
+    legal_deadline = delivery_date + timedelta(days=LEGAL_WARRANTY_DAYS)
     if ref_date <= store_deadline:
         return ReturnDecision(
             True,
@@ -130,8 +136,9 @@ def _defect(order_date: date, delivery_date: date, ref_date: date) -> ReturnDeci
             "defect_store_exchange",
             _DEFECT_CONDITIONS + _COMMON_CONDITIONS,
             "4.2",
+            next_path="legal_warranty",
+            next_deadline=legal_deadline,
         )
-    legal_deadline = delivery_date + timedelta(days=LEGAL_WARRANTY_DAYS)
     if ref_date <= legal_deadline:
         conditions = (
             "The store exchange window (30 days from purchase) has passed; the 90-day legal "
@@ -146,6 +153,7 @@ def _defect(order_date: date, delivery_date: date, ref_date: date) -> ReturnDeci
             "defect_legal_warranty",
             conditions,
             "8.1",
+            next_path="manufacturer_warranty",
         )
     conditions = (
         "Legal warranty (90 days from delivery) has expired. The manufacturer warranty "

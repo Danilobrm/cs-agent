@@ -69,6 +69,19 @@ def test_search_category_without_products(ctx):
         assert result == {"results": [], "total_matches": 0, "note": "category_not_carried"}
 
 
+def test_category_found_by_description_without_products(ctx):
+    for name in ("saxofone", "flautas", "trompete", "violino"):
+        result = search_products(ctx, category=name)
+        assert result == {"results": [], "total_matches": 0, "note": "category_not_carried"}, name
+
+
+def test_product_word_in_a_description_is_not_a_category(ctx):
+    # "contrabaixo" is in the orchestral strings description but also names electric basses
+    result = search_products(ctx, category="contrabaixo")
+    assert result["note"] == "category_not_found"
+    assert search_products(ctx, query="contrabaixo")["results"]
+
+
 def test_withheld_description_is_not_searchable(ctx):
     # 135 is a Music Man bass whose (withheld) description talks about a Fender
     assert 135 not in ids(search_products(ctx, query="fender", limit=10))

@@ -45,7 +45,9 @@ TOOLS: dict[str, ToolSpec] = {
             "about what the store sells or for recommendations; never state a price or stock "
             "from memory. Returns up to `limit` products (max 10) with availability, stock and "
             "final prices. note=category_not_carried means the store does not carry that "
-            "category right now; note=category_not_found comes with the list of real categories.",
+            "category right now; note=category_not_found comes with the list of category names, "
+            "which says nothing about stock. only_available hides out-of-stock products, so leave "
+            "it off when the customer names a specific product.",
             _schema(
                 query={"type": "string", "description": "Free text: brand, model, type, color."},
                 category={"type": "string", "description": 'Category name, e.g. "violao".'},
@@ -87,8 +89,9 @@ TOOLS: dict[str, ToolSpec] = {
         ToolSpec(
             "get_order",
             "Status, items, payment, tracking code and delivery status (on_time or delayed) of an "
-            "order. Call only after verify_customer succeeded for this order. If total_check "
-            "does not match, report the recorded total and offer a human review.",
+            "order; days_late is present when it is delayed. Call only after verify_customer "
+            "succeeded for this order. If total_check does not match, report the recorded total "
+            "and offer a human review.",
             _schema(["order_id"], order_id=_ORDER_ID),
             orders.get_order,
         ),
@@ -97,9 +100,11 @@ TOOLS: dict[str, ToolSpec] = {
             "Decide whether an order can be returned, exchanged or claimed under warranty, with "
             "deadline and conditions. Call only after verify_customer succeeded for this order. "
             "reason: regret (changed their mind), preference (wants another model, size or "
-            "color) or defect (manufacturing defect).",
+            "color) or defect (manufacturing defect). Leave reason out when it is unclear or the "
+            "question is hypothetical: the result then has one decision per reason in by_reason. "
+            "For defects, next_path and next_deadline say what applies after the deadline.",
             _schema(
-                ["order_id", "reason"],
+                ["order_id"],
                 order_id=_ORDER_ID,
                 reason={"type": "string", "enum": ["regret", "preference", "defect"]},
             ),

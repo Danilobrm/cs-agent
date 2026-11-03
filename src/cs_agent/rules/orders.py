@@ -29,6 +29,14 @@ def delivery_status(
     return "delayed" if ref_date > estimated_delivery else "on_time"
 
 
+def days_late(status: str, estimated_delivery: date | None, ref_date: date) -> int | None:
+    """Calendar days a shipped order is past its estimated delivery; None when not delayed."""
+    if delivery_status(status, estimated_delivery, ref_date) != "delayed":
+        return None
+    assert estimated_delivery is not None  # a delayed order always has an estimate
+    return (ref_date - estimated_delivery).days
+
+
 def total_matches(recorded_total: Decimal, items: list[dict[str, Any]]) -> TotalCheck:
     """Compare the recorded order total with the sum of quantity x current unit price.
 

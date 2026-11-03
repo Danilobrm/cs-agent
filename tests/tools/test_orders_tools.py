@@ -1,4 +1,5 @@
 import json
+from dataclasses import replace
 from datetime import date
 
 import pytest
@@ -63,6 +64,7 @@ def test_get_order_shipped_late(ctx):
     order = get_order(ctx, 8)
     assert order["status"] == "shipped"
     assert order["delivery_status"] == "delayed"
+    assert order["days_late"] == 25  # estimate 28/02, reference date 25/03
     assert order["payment"] == "Cartão de débito"
     assert order["tracking_code"] == "BRJL5544332BR"
     assert order["estimated_delivery"] == date(2026, 2, 28)
@@ -95,6 +97,11 @@ def test_total_check_reports_mismatch(ctx):
     assert check["computed_at_current_prices"] is not None
 
 
+def test_days_late_only_when_delayed(ctx):
+    verify_customer(ctx, 7, "leticia.rocha@jmail.com")
+    assert "days_late" not in get_order(ctx, 7)  # delivered
+
+
 def test_regret_window_expired_for_delivered_order(ctx):
     verify_customer(ctx, 7, "leticia.rocha@jmail.com")
     result = check_return_eligibility(ctx, 7, "regret")
@@ -108,6 +115,33 @@ def test_defect_falls_to_legal_warranty(ctx):
     result = check_return_eligibility(ctx, 7, "defect")
     assert result["eligible"] is True
     assert result["path"] == "legal_warranty"
+
+
+def test_order_6_defect_shows_store_exchange_then_legal_warranty(ctx):
+    ctx = replace(ctx, ref_date=date(2026, 2, 5))
+    verify_customer(ctx, 6, "gabriel.araujo@jmail.com")
+    result = check_return_eligibility(ctx, 6, "defect")
+    assert result["path"] == "store_exchange"
+    assert result["deadline"] == date(2026, 2, 17)  # order 18/01 + 30 days
+    assert result["next_path"] == "legal_warranty"
+    assert result["next_deadline"] == date(2026, 5, 2)  # delivery 01/02 + 90 days
+
+
+def test_without_reason_returns_every_path(ctx):
+    ctx = replace(ctx, ref_date=date(2026, 2, 5))
+    verify_customer(ctx, 6, "gabriel.araujo@jmail.com")
+    result = check_return_eligibility(ctx, 6)
+    assert set(result) == {"order_id", "by_reason"}
+    by_reason = result["by_reason"]
+    assert set(by_reason) == {"regret", "preference", "defect"}
+    assert by_reason["regret"]["path"] == "store_return"
+    assert by_reason["regret"]["deadline"] == date(2026, 2, 8)  # delivery 01/02 + 7 days
+    assert by_reason["defect"]["next_path"] == "legal_warranty"
+    json.dumps(to_json_safe(result))
+
+
+def test_without_reason_still_requires_verification(ctx):
+    assert check_return_eligibility(ctx, 6) == {"error": "verification_required"}
 
 
 def test_not_delivered_order_is_not_returnable_yet(ctx):

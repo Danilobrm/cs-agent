@@ -50,6 +50,8 @@ def test_defect_day_30_after_order_is_store_exchange():
     assert d.eligible and d.path == "store_exchange"
     assert d.deadline == ref and d.days_left == 0
     assert d.policy_section == "4.2"
+    assert d.next_path == "legal_warranty"
+    assert d.next_deadline == DELIVERY + timedelta(days=90)
 
 
 def test_defect_day_31_after_order_is_legal_warranty():
@@ -59,6 +61,7 @@ def test_defect_day_31_after_order_is_legal_warranty():
     assert d.deadline == DELIVERY + timedelta(days=90)
     assert d.days_left == 90 - (ref - DELIVERY).days
     assert d.policy_section == "8.1"
+    assert d.next_path == "manufacturer_warranty" and d.next_deadline is None
 
 
 def test_defect_legal_warranty_last_day_and_manufacturer_after():
@@ -68,6 +71,7 @@ def test_defect_legal_warranty_last_day_and_manufacturer_after():
     assert not d.eligible and d.path == "manufacturer_warranty"
     assert d.deadline is None and d.days_left is None
     assert d.policy_section == "8.2"
+    assert d.next_path is None and d.next_deadline is None
     assert "certificate" in " ".join(d.conditions)
 
 
@@ -116,3 +120,8 @@ def test_unknown_reason_and_status_raise():
 def test_delivered_without_delivery_date_raises():
     with pytest.raises(ValueError):
         return_eligibility("delivered", ORDER, None, "regret", date(2026, 3, 25))
+
+
+def test_regret_has_no_next_path():
+    d = decide("regret", 1)
+    assert d.next_path is None and d.next_deadline is None

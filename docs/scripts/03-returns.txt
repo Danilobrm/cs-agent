@@ -1,0 +1,8 @@
+# Returns within the regret window
+# Gabriel received order 6 (Taylor 214ce) on 01/02/2026. On 05/02/2026 the 7-day regret
+# window is open: deadline, days left, return conditions, and the path for a later defect.
+# run: uv run cs-agent --script docs/scripts/03-returns.txt --debug --time 10:00 --date 2026-02-05 --transcript docs/conversations/03-returns.md
+
+Comprei um violão e me arrependi, dá pra devolver?
+Pedido 6, gabriel.araujo@jmail.com
+E se eu descobrir um defeito depois do prazo de devolução?

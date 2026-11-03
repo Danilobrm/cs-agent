@@ -1,0 +1,7 @@
+# Defect after the legal warranty
+# Pedro's order 1 (Martin D-28) was delivered on 25/10/2025. By 25/03/2026 the store's
+# 30-day exchange and the 90-day legal warranty are over: the manufacturer warranty path.
+# run: uv run cs-agent --script docs/scripts/03b-returns-expired.txt --debug --time 10:00 --transcript docs/conversations/03b-returns-expired.md
+
+Oi, meu violão deu defeito
+Pedido 1, pedro.oliveira@jmail.com
