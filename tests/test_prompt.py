@@ -18,6 +18,9 @@ def test_hard_rules_are_present():
     prompt = build_system_prompt(POLICY, WED_10, True, None)
     for phrase in (
         "Never state a price, stock level",
+        "tool result in THIS conversation",
+        "different product, quantity, city or payment option",
+        "before confirming availability",
         "Never do arithmetic or date math",
         "original price and the discount percent",
         "data_warning",
