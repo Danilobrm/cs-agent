@@ -9,7 +9,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from cs_agent.agent import FALLBACK_TEXT, Agent
+from cs_agent.agent import FALLBACK_TEXT, TICKET_CORRECTION, Agent, mentioned_tickets
 from cs_agent.data import load_store
 from cs_agent.llm import LLM
 from cs_agent.tools import context
@@ -299,3 +299,96 @@ def test_fixed_time_survives_replies_and_reset(store, monkeypatch):
     agent.reset()
     agent.reply("oi")
     assert all("25/03/2026 10:00" in r["messages"][0]["content"] for r in client.requests)
+
+
+# --- ticket guard ---
+
+HANDOFF = {"reason": "order_issue", "summary": "atraso"}
+
+
+@pytest.mark.parametrize(
+    ("reply", "ids"),
+    [
+        ("O número do seu ticket é 12345.", {"12345"}),
+        ("Abri o chamado ATD-0001, retorno em 24 horas úteis.", {"ATD-0001"}),
+        ("Seu protocolo: #98765", {"98765"}),
+        ("Chamado nº 4321 aberto.", {"4321"}),
+        ("Seu atendimento atd-0002 já está na fila.", {"ATD-0002"}),
+        ("Posso abrir um chamado para você?", set()),
+        ("Abra um chamado pelo WhatsApp (67) 3321-4500.", set()),
+        ("Retorno do chamado em até 24 horas úteis.", set()),
+        ("Abri um chamado para o pedido 8.", set()),
+    ],
+)
+def test_mentioned_tickets(reply, ids):
+    assert mentioned_tickets(reply) == ids
+
+
+def test_real_ticket_passes_without_correction(store):
+    agent, client = make_agent(
+        store,
+        [tools_msg(call("request_human_handoff", HANDOFF)), text("Ticket ATD-0001 aberto.")],
+    )
+    reply = agent.reply("quero falar com alguém")
+    assert reply.text == "Ticket ATD-0001 aberto." and not reply.fallback
+    assert len(client.requests) == 2
+
+
+def test_ticket_from_an_earlier_turn_is_not_invented(store):
+    agent, client = make_agent(
+        store,
+        [
+            tools_msg(call("request_human_handoff", HANDOFF)),
+            text("Ticket ATD-0001 aberto."),
+            text("Seu ticket é o ATD-0001."),
+        ],
+    )
+    agent.reply("quero falar com alguém")
+    reply = agent.reply("qual era o meu ticket?")
+    assert reply.text == "Seu ticket é o ATD-0001." and len(client.requests) == 3
+
+
+def test_invented_ticket_is_corrected_once(store):
+    agent, client = make_agent(
+        store,
+        [
+            text("O número do seu ticket é 12345."),
+            tools_msg(call("request_human_handoff", HANDOFF)),
+            text("Abri o chamado ATD-0001."),
+        ],
+    )
+    reply = agent.reply("quero falar com alguém")
+    assert reply.text == "Abri o chamado ATD-0001." and not reply.fallback
+    assert [t.name for t in reply.trace] == ["request_human_handoff"]
+    retry = client.requests[1]["messages"]
+    assert retry[-2] == {"role": "assistant", "content": "O número do seu ticket é 12345."}
+    assert retry[-1] == {"role": "user", "content": TICKET_CORRECTION}
+    # the rejected reply and the correction do not stay in the conversation
+    assert all(m["content"] != TICKET_CORRECTION for m in agent.history)
+    assert [m["role"] for m in agent.history] == ["user", "assistant", "tool", "assistant"]
+    assert_valid_history(agent.history)
+
+
+def test_correction_can_remove_the_claim(store):
+    agent, _ = make_agent(
+        store, [text("Seu protocolo é 55555."), text("Posso abrir um chamado para você?")]
+    )
+    reply = agent.reply("quero falar com alguém")
+    assert reply.text == "Posso abrir um chamado para você?" and not reply.fallback
+    assert agent.history == [
+        {"role": "user", "content": "quero falar com alguém"},
+        {"role": "assistant", "content": "Posso abrir um chamado para você?"},
+    ]
+
+
+def test_invented_ticket_twice_gives_fallback(store):
+    agent, client = make_agent(
+        store, [text("Seu ticket é 12345."), text("Seu ticket é 67890."), text("nunca usado")]
+    )
+    reply = agent.reply("quero falar com alguém")
+    assert reply.fallback and reply.text == FALLBACK_TEXT
+    assert len(client.requests) == 2
+    assert agent.history == [
+        {"role": "user", "content": "quero falar com alguém"},
+        {"role": "assistant", "content": FALLBACK_TEXT},
+    ]
